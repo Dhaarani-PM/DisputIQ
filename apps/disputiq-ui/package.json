@@ -1,22 +1,22 @@
 {
-  "name": "local-disputiq",
+  "name": "disputiq_team.disputiq",
   "version": "0.1.0",
   "private": true,
   "description": "Disputiq — a RocketRide app",
   "license": "MIT",
   "appManifest": {
-    "id": "local.disputiq",
+    "id": "disputiq_team.disputiq",
     "publisher": "local",
     "name": "Disputiq",
     "description": "Disputiq — a RocketRide app",
-    "icon": "./icon.svg",
     "readme": "./README.md",
     "categories": [
       "custom"
     ],
     "mode": "free",
     "authenticated": false,
-    "projectId": "6ad2845a-2f60-402d-8ac5-cc487bda4a64"
+    "projectId": "6ad2845a-2f60-402d-8ac5-cc487bda4a64",
+    "icon": "./Asserts/Logo.svg"
   },
   "scripts": {
     "dev": "rsbuild dev",

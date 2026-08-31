@@ -1,75 +1,50 @@
-// =============================================================================
-// MIT License
-// Copyright (c) 2026 Aparavi Software AG
-// =============================================================================
-
-/**
- * Disputiq — root component rendered by the RocketRide shell.
- */
-
-import React from 'react';
-import type { ShellAppProps } from 'shell';
-import { AppLayout, Documents, DocSplitLayout, DocTabs } from 'shell';
-
-// =============================================================================
-// STYLES
-// =============================================================================
-
-const styles: Record<string, React.CSSProperties> = {
-	wrap: { padding: 40, fontFamily: 'var(--rr-font-family, system-ui)' },
-	title: { fontSize: 22, fontWeight: 600, color: 'var(--rr-text-primary)' },
-	sub: { marginTop: 8, fontSize: 13, color: 'var(--rr-text-secondary)' },
-	nav: { padding: '10px 8px' },
-	navItem: { padding: '6px 10px', borderRadius: 6, fontSize: 13, color: 'var(--rr-text-primary)', cursor: 'pointer' },
+import React, { useState } from 'react';
+import type { ShellAppProps, ConnectResult } from 'shell';
+import { AppLayout, ConnectionManager, useAuthUser } from 'shell';
+import backgroundImage from '../Asserts/BG.png';
+import logoImage from '../Asserts/Logo.png';
+import nameImage from '../Asserts/Name.png';
+type IconName = 'google' | 'github' | 'linkedin' | 'mail' | 'lock' | 'user' | 'eye' | 'eyeOff' | 'arrow' | 'close';
+type Values = Record<'name' | 'email' | 'password' | 'confirm', string>;
+const empty: Values = { name: '', email: '', password: '', confirm: '' };
+const Icon: React.FC<{ name: IconName }> = ({ name }) => {
+	const d: Record<IconName, React.ReactNode> = {
+		google: <path fill="currentColor" d="M21.6 12.23c0-.71-.06-1.2-.2-1.72H12v3.37h5.52c-.11.84-.72 2.1-2.08 2.95l-.02.11 3.02 2.28.21.02c1.96-1.76 2.95-4.35 2.95-7.01Z M12 21.75c2.7 0 4.97-.87 6.63-2.37l-3.16-2.41c-.85.57-1.99.97-3.47.97a6 6 0 0 1-5.67-4.05l-.11.01-3.14 2.36-.04.1A10 10 0 0 0 12 21.75ZM6.33 13.85A5.8 5.8 0 0 1 6 12c0-.64.12-1.25.32-1.85l-.01-.12-3.18-2.4-.1.04A9.66 9.66 0 0 0 2 12c0 1.56.37 3.03 1.03 4.33l3.3-2.48ZM12 6.05c1.87 0 3.13.79 3.85 1.45l2.81-2.67C16.96 3.27 14.7 2.25 12 2.25a10 10 0 0 0-8.97 5.42l3.29 2.48A6 6 0 0 1 12 6.05Z" />,
+		github: <path fill="currentColor" d="M12 2.2a10 10 0 0 0-3.16 19.49c.5.1.68-.2.68-.47v-1.72c-2.78.58-3.37-1.16-3.37-1.16-.46-1.12-1.1-1.42-1.1-1.42-.9-.6.07-.59.07-.59 1 .07 1.52 1 1.52 1 .9 1.45 2.34 1.03 2.91.79.09-.63.35-1.04.64-1.28-2.22-.24-4.56-1.07-4.56-4.8 0-1.06.39-1.93 1.02-2.61-.1-.25-.44-1.24.1-2.58 0 0 .83-.26 2.73 1a9.7 9.7 0 0 1 4.96 0c1.9-1.26 2.72-1 2.72-1 .55 1.34.2 2.33.11 2.58.63.68 1.01 1.55 1.01 2.61 0 3.74-2.35 4.55-4.58 4.79.36.3.68.86.68 1.73v2.57c0 .27.18.57.69.47A10 10 0 0 0 12 2.2Z" />,
+		linkedin: <path fill="currentColor" d="M5.2 3.5a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4ZM3.3 9.5h3.8v11H3.3v-11Zm6.2 0h3.64V11h.05c.5-.94 1.75-1.94 3.6-1.94 3.86 0 4.57 2.47 4.57 5.68v5.76h-3.8v-5.1c0-1.22-.02-2.78-1.75-2.78-1.76 0-2.03 1.33-2.03 2.69v5.19H9.5v-11Z" />,
+		mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 7 8.5 6 8.5-6" /></>, lock: <><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>, user: <><circle cx="12" cy="8" r="3" /><path d="M5 20a7 7 0 0 1 14 0" /></>, eye: <><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.2" /></>, eyeOff: <><path d="m3 3 18 18M9.9 6.8A9.8 9.8 0 0 1 12 6.5c6 0 9.5 5.5 9.5 5.5a17 17 0 0 1-3 3.55M6.1 6.1A17 17 0 0 0 2.5 12S6 17.5 12 17.5c.75 0 1.45-.08 2.1-.23" /><path d="M10 10a2.8 2.8 0 0 0 3.95 3.95" /></>, arrow: <path d="M4 12h15m-6-6 6 6-6 6" />, close: <path d="m6 6 12 12M18 6 6 18" />,
+	};
+	return <svg className={`icon icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">{d[name]}</svg>;
 };
-
-// =============================================================================
-// DOCUMENTS
-// =============================================================================
-
-// The app OWNS its document model — the shell never sees it. No VFS is wired
-// here, so documents are static; pass an IVirtualFileSystem to open real files.
-const docs = new Documents();
-docs.openStaticDocument('welcome', 'Welcome');
-
-// =============================================================================
-// COMPONENT
-// =============================================================================
-
-/** Sidebar navigation — replace the items with your app's sections. */
-const SidebarNav: React.FC = () => (
-	<div style={styles.nav}>
-		<div style={styles.navItem}>Overview</div>
-		<div style={styles.navItem}>Activity</div>
-		<div style={styles.navItem}>Settings</div>
-	</div>
-);
-
-/** Client-area content — replace with your app. */
-const Content: React.FC<ShellAppProps> = ({ isConnected, identity }) => (
-	<div style={styles.wrap}>
-		<h1 style={styles.title}>Disputiq</h1>
-		<p style={styles.sub}>Edit src/App.tsx and save — the preview reloads automatically.</p>
-		<p style={styles.sub}>Connected: {isConnected ? 'yes' : 'no'} · User: {identity?.displayName ?? 'not signed in'}</p>
-	</div>
-);
-
-/**
- * Root view — AppLayout declares the frame the wizard selected; recompose
- * its props (`sidebar`, `showStatus`) to change it.
- */
-const App: React.FC<ShellAppProps> = (props) => (
-	<AppLayout sidebar={<SidebarNav />} showStatus>
-		<DocSplitLayout
-			docs={docs}
-			renderPane={(groupId) => (
-				<>
-					<DocTabs docs={docs} groupId={groupId} isActive />
-					<Content {...props} />
-				</>
-			)}
-		/>
-	</AppLayout>
-);
-
+const validEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const Socials: React.FC<{ onLogin: () => void }> = ({ onLogin }) => <div className="socials" aria-label="Social login options">{(['google', 'github', 'linkedin', 'mail'] as IconName[]).map((icon) => <button key={icon} type="button" className="social" aria-label={`Continue with ${icon}`} onClick={onLogin}><Icon name={icon} /></button>)}</div>;
+const Field: React.FC<{ label: string; field: keyof Values; icon: IconName; value: string; onChange: (v: string) => void; error?: string; password?: boolean }> = ({ label, field, icon, value, onChange, error, password }) => {
+	const [visible, setVisible] = useState(false);
+	return <label className="field"><span className="field-label">{label}</span><div className={`field-box ${error ? 'invalid' : ''}`}><Icon name={icon} /><input value={value} onChange={(e) => onChange(e.target.value)} type={password && !visible ? 'password' : field === 'email' ? 'email' : 'text'} placeholder={label} autoComplete={field === 'email' ? 'email' : password ? 'new-password' : 'name'} />{password && <button type="button" className="icon-button" onClick={() => setVisible(!visible)} aria-label={visible ? 'Hide password' : 'Show password'}><Icon name={visible ? 'eyeOff' : 'eye'} /></button>}</div>{error && <small className="error">{error}</small>}</label>;
+};
+const App: React.FC<ShellAppProps> = () => {
+	const [signup, setSignup] = useState(false); const [login, setLogin] = useState<Values>(empty); const [register, setRegister] = useState<Values>(empty);
+	const identity = useAuthUser();
+	const [view, setView] = useState('Dashboard');
+	const [errors, setErrors] = useState<Record<string, string>>({}); const [notice, setNotice] = useState(''); const [reset, setReset] = useState(false); const [busy, setBusy] = useState(false);
+	const set = (mode: 'login' | 'register', field: keyof Values, value: string) => mode === 'login' ? setLogin({ ...login, [field]: value }) : setRegister({ ...register, [field]: value });
+	const validate = (values: Values, sign: boolean) => { const next: Record<string, string> = {}; if (sign && !values.name.trim()) next.name = 'Enter your full name.'; if (!values.email) next.email = 'Enter your email.'; else if (!validEmail(values.email)) next.email = 'Enter a valid email address.'; if (!values.password) next.password = 'Enter your password.'; if (sign && values.confirm !== values.password) next.confirm = 'Passwords do not match.'; return next; };
+	const requestHostLogin = (registerFlow: boolean) => { setBusy(true); setNotice('Opening RocketRide authentication…'); ConnectionManager.getInstance().emit('shell:loginRequest', { register: registerFlow }); setBusy(false); };
+	const submit = (event: React.FormEvent, sign: boolean) => { event.preventDefault(); const values = sign ? register : login; const next = validate(values, sign); setErrors(next); setNotice(''); if (Object.keys(next).length) return; requestHostLogin(sign); };
+	const sendReset = () => { const next = validate({ ...login, password: 'x' }, false); setErrors(next); if (!next.email) { setReset(false); setNotice(`A reset link would be sent to ${login.email} when a backend is connected.`); } };
+	const form = (sign: boolean) => { const values = sign ? register : login; const mode = sign ? 'register' : 'login'; return <form className="form-card" onSubmit={(e) => submit(e, sign)} noValidate><div className="form-inner"><div className="intro"><h1>{sign ? <>Sign <em>Up</em></> : <>Log <em>In</em></>}</h1><p>{sign ? 'Create your account and get started.' : 'Welcome back! Please log in to continue.'}</p></div>{!sign && <><Socials onLogin={() => requestHostLogin(false)} /><div className="divider"><span />or<span /></div></>}{sign && <Field label="Full Name" field="name" icon="user" value={values.name} onChange={(v) => set(mode, 'name', v)} error={errors.name} />}<Field label="Enter your email" field="email" icon="mail" value={values.email} onChange={(v) => set(mode, 'email', v)} error={errors.email} /><Field label={sign ? 'Create a password' : 'Enter your password'} field="password" icon="lock" value={values.password} onChange={(v) => set(mode, 'password', v)} error={errors.password} password />{sign && <Field label="Confirm your password" field="confirm" icon="lock" value={values.confirm} onChange={(v) => set(mode, 'confirm', v)} error={errors.confirm} password />}{!sign && <button className="forgot" type="button" onClick={() => setReset(true)}>Forgot <strong>Password?</strong></button>}<button className="primary" type="submit" disabled={busy}>{busy ? 'OPENING AUTH…' : sign ? 'SIGN UP' : 'LOG IN'} <Icon name="arrow" /></button>{sign && <><div className="divider signup-divider"><span />or<span /></div><Socials onLogin={() => requestHostLogin(true)} /></>}</div></form>; };
+	const brand = (sign: boolean) => <section className="brand"><div className="logo-row"><img src={logoImage} alt="DisputIQ logo" /><img src={nameImage} alt="DisputIQ" /></div><div className="brand-copy"><p>SMART RESOLUTIONS</p><i /><span>AI-Powered Chargeback<br />Dispute Management System</span></div><div className="cta"><p>{sign ? 'Already have an account?' : "Don’t have an account?"}</p><button type="button" onClick={() => { setSignup(!sign); setErrors({}); setNotice(''); }}>{sign ? 'LOG IN' : 'SIGN UP'} <Icon name="arrow" /></button></div></section>;
+	if (identity) return <AppLayout showStatus={false}><Dashboard identity={identity} view={view} setView={setView} /><style>{css + dashboardCss}</style></AppLayout>;
+	return <AppLayout showStatus={false}><main className={`auth-page ${signup ? 'is-signup' : ''}`} style={{ '--bg': `url(${backgroundImage})` } as React.CSSProperties}><div className="auth-card"><div className="panel form-panel"><div className="form-track">{form(false)}{form(true)}</div></div><div className="panel brand-panel"><div className="brand-track">{brand(false)}{brand(true)}</div></div></div>{notice && <p className="notice" role="status">{notice}</p>}{reset && <div className="modal-backdrop" role="presentation"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="reset-title"><button className="modal-close" aria-label="Close" onClick={() => setReset(false)}><Icon name="close" /></button><h2 id="reset-title">Reset password</h2><p>RocketRide password reset is handled by the host account flow.</p><button className="primary" type="button" onClick={() => { setReset(false); requestHostLogin(false); }}>OPEN HOST SIGN-IN <Icon name="arrow" /></button></section></div>}</main><style>{css}</style></AppLayout>;
+};
+const Dashboard: React.FC<{identity: any; view:string; setView:(v:string)=>void}> = ({identity,view,setView}) => <main className="app-shell"><aside className="sidebar"><div className="side-brand"><img src={logoImage}/><img src={nameImage}/></div>{['Dashboard','New Dispute','My Disputes','Evidence','AI Analysis','Reports','Profile','Settings'].map(item=><button className={view===item?'active':''} onClick={()=>setView(item)} key={item}>{item}</button>)}<button className="logout" onClick={()=>ConnectionManager.getInstance().emit('shell:logoutRequest',{})}>Log out</button></aside><section className="workspace"><header className="topbar"><div><small>DisputIQ workspace</small><h1>{view}</h1></div><div className="user-chip">{identity.displayName ?? identity.email ?? 'Account'}</div></header>{view==='Dashboard'?<><div className="summary-grid">{['Total Disputes','Pending Review','Won','Lost'].map(label=><article className="summary" key={label}><span>{label}</span><strong>—</strong><small>No connected data source</small></article>)}</div><section className="content-card"><div className="card-heading"><div><h2>Recent disputes</h2><p>Your dispute activity will appear here once a persistence pipeline is connected.</p></div><button className="primary compact" onClick={()=>setView('New Dispute')}>Create New Dispute <Icon name="arrow"/></button></div><div className="empty-state"><span>◎</span><h3>No disputes yet</h3><p>Create your first case to begin organizing transaction details and evidence.</p></div></section></>:<section className="content-card page-placeholder"><h2>{view}</h2><p>This workspace is ready for {view.toLowerCase()} data. RocketRide persistence and AI pipeline configuration is required before records can be stored or analyzed.</p><button className="primary compact" onClick={()=>setView('Dashboard')}>Back to Dashboard</button></section>}</section></main>;
+const dashboardCss = `.app-shell{min-height:100vh;display:flex;background:#090909;color:#f7f3f3;font-family:Inter,Arial,sans-serif}.sidebar{width:220px;padding:24px 16px;box-sizing:border-box;background:linear-gradient(180deg,#1a080a,#0d0d0d);border-right:1px solid #542126;display:flex;flex-direction:column;gap:7px}.side-brand{display:flex;align-items:center;gap:8px;padding:8px 10px 28px}.side-brand img:first-child{width:34px}.side-brand img:last-child{width:120px}.sidebar button{border:0;background:transparent;color:#bdb5b6;text-align:left;padding:12px 14px;border-radius:7px;cursor:pointer}.sidebar button.active,.sidebar button:hover{background:#3a1115;color:#fff}.sidebar .logout{margin-top:auto;color:#ff5961}.workspace{flex:1;padding:30px 38px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:30px}.topbar small{color:#a99c9d}.topbar h1{margin:5px 0 0;font-size:30px}.user-chip{border:1px solid #552126;padding:10px 14px;border-radius:999px;color:#f2dfe0;font-size:13px}.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}.summary,.content-card{background:#151515;border:1px solid #3e3032;border-radius:12px;padding:20px;box-sizing:border-box}.summary{display:flex;flex-direction:column;gap:10px}.summary span{color:#bbb0b2;font-size:13px}.summary strong{font-size:30px;color:#ff3440}.summary small,.content-card p{color:#95898b;font-size:13px}.card-heading{display:flex;justify-content:space-between;gap:16px;align-items:center}.card-heading h2,.content-card h2{margin:0}.compact{width:auto;padding:0 18px}.empty-state{text-align:center;padding:70px 10px}.empty-state span{font-size:34px;color:#e51c2b}.empty-state h3{margin:14px 0 6px}.page-placeholder{max-width:800px}.page-placeholder .primary{margin-top:20px;width:auto;padding:0 20px}@media(max-width:800px){.sidebar{width:72px;padding:16px 8px}.side-brand img:last-child,.sidebar button{font-size:0}.sidebar button:before{content:'•';font-size:22px}.workspace{padding:22px 16px}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.summary-grid{grid-template-columns:1fr}.topbar{align-items:flex-start;gap:12px;flex-direction:column}}`;
+const css = `
+.auth-page{min-height:100%;height:100%;display:grid;place-items:center;position:relative;overflow:hidden;background:#080909 var(--bg) center/cover no-repeat;color:#f8f6f6;font-family:Inter,Arial,sans-serif}.auth-page:before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.22)}.auth-card{position:relative;z-index:1;width:min(960px,calc(100% - 32px));height:475px;overflow:hidden;border:1px solid rgba(244,73,73,.65);border-radius:20px;background:#111;box-shadow:0 22px 60px rgba(0,0,0,.7),0 0 25px rgba(238,15,22,.18)}.panel{position:absolute;top:0;width:50%;height:100%;overflow:hidden;box-sizing:border-box;transition:transform 600ms cubic-bezier(.65,0,.35,1);will-change:transform}.form-panel{left:0;z-index:2;background:rgba(18,18,18,.96)}.brand-panel{left:50%;z-index:1;background:linear-gradient(135deg,rgba(70,8,10,.92),rgba(10,10,10,.98))}.is-signup .form-panel{transform:translateX(100%)}.is-signup .brand-panel{transform:translateX(-100%)}.form-track,.brand-track{display:flex;width:200%;height:100%;transform:translateX(0);transition:transform 600ms cubic-bezier(.65,0,.35,1)}.is-signup .form-track,.is-signup .brand-track{transform:translateX(-50%)}.form-card,.brand{width:50%;min-width:50%;height:100%;box-sizing:border-box}.form-card{display:grid;place-items:center;margin:0}.form-inner{width:min(368px,80%)}.intro{text-align:center;margin-bottom:20px}.intro h1{margin:0;font-size:29px}.intro em{color:#f21d2a;font-style:normal}.intro p{font-size:12px;margin:7px 0;color:#e1dede}.socials{display:flex;justify-content:center;gap:20px}.social{width:59px;height:52px;display:grid;place-items:center;border:1px solid #494649;border-radius:6px;background:#111;color:#eee;cursor:pointer}.social:hover{border-color:#ed2630}.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.icon-google,.icon-github,.icon-linkedin{stroke:none}.icon-google{color:#ea2632}.icon-linkedin{color:#ee2631}.divider{display:flex;align-items:center;gap:18px;margin:26px 0 21px;font-size:12px;color:#e5e2e3}.divider span{height:1px;flex:1;background:#363436}.field{display:block;margin:10px 0}.field-box{width:100%;height:46px;display:flex;align-items:center;gap:11px;padding:0 12px;box-sizing:border-box;border:1px solid #545155;border-radius:5px;background:#111}.field-box:focus-within{border-color:#ed2630;box-shadow:0 0 0 2px rgba(237,38,48,.14)}.field-box.invalid{border-color:#ef5d63}.field input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font-size:13px}.field input::placeholder{color:#d0cccf}.icon-button{border:0;background:transparent;padding:0;color:#eee;cursor:pointer}.error{display:block;color:#ff8085;font-size:10px;margin:4px 2px}.forgot{display:block;margin:15px 0 21px  auto;border:0;background:transparent;color:#f5eeee;font-size:11px;cursor:pointer}.forgot strong{color:#f0202d}.primary,.cta button{height:46px;width:100%;display:flex;align-items:center;justify-content:center;gap:16px;border:1px solid #f22631;border-radius:5px;background:linear-gradient(100deg,#cc0b14,#f3212c);color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.primary:disabled{opacity:.7;cursor:wait}.primary .icon,.cta .icon{width:17px}.signup-divider{margin:17px 0}.brand{display:flex;flex-direction:column;align-items:center;padding:43px 45px;text-align:center}.logo-row{display:flex;align-items:center;gap:12px;margin-top:40px}.logo-row img:first-child{width:75px;height:57px;object-fit:contain}.logo-row img:last-child{width:185px}.brand-copy{margin-top:12px}.brand-copy p{margin:0;color:#d5d1d2;font-size:15px}.brand-copy i{display:block;width:64px;height:2px;background:#ef1e2b;margin:25px auto}.brand-copy span{font-size:15px;line-height:1.7}.cta{margin-top:43px}.cta p{font-size:14px;margin:0 0 15px}.cta button{width:210px;background:rgba(0,0,0,.2);color:#ef2630}.notice{position:absolute;z-index:2;bottom:18px;max-width:600px;padding:10px 16px;border:1px solid rgba(242,38,48,.55);border-radius:6px;background:#161313;color:#f3dfdf;font-size:12px}.modal-backdrop{position:absolute;z-index:4;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.64)}.modal{position:relative;width:min(350px,calc(100% - 40px));padding:28px;box-sizing:border-box;border:1px solid #713336;border-radius:12px;background:#171516;box-shadow:0 20px 50px #000}.modal h2{margin:0}.modal p{font-size:13px;color:#cbc6c8}.modal input{width:100%;height:43px;margin:10px 0 15px;padding:0 12px;box-sizing:border-box;border:1px solid #555;border-radius:5px;background:#101010;color:#fff}.modal-close{position:absolute;right:12px;top:12px;border:0;background:transparent;color:#fff;cursor:pointer}.modal-close .icon{width:18px}@media(max-width:760px){.auth-card{height:590px}.form-inner{width:82%}.brand{padding:30px 20px}.logo-row{margin-top:25px}.logo-row img:first-child{width:55px}.logo-row img:last-child{width:145px}.cta{margin-top:28px}}@media(prefers-reduced-motion:reduce){.panel,.form-track,.brand-track{transition-duration:1ms}}
+/* Sign-up containment: every control is sized by the same centered column. */
+.auth-page{min-height:100vh;height:auto;box-sizing:border-box;padding:32px 16px}.auth-card{height:min(650px,calc(100vh - 64px));min-height:570px;max-height:650px}.panel,.form-track,.brand-track,.form-card,.brand{min-height:0}.form-inner{width:min(400px,calc(100% - 56px));max-width:400px;box-sizing:border-box}.field{width:100%;margin:9px 0}.field-label{display:block;margin:0 0 5px;color:#f1eeee;font-size:12px;font-weight:600;line-height:1.15}.field-box{width:100%;height:45px;padding:0 13px}.primary{width:100%;margin-top:11px}.signup-divider{width:100%;margin:17px 0}.socials{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.social{width:100%;height:52px;min-width:0}.brand{box-sizing:border-box}.form-panel,.brand-panel{contain:layout paint}@media(max-height:720px) and (min-width:761px){.auth-card{height:calc(100vh - 32px);min-height:540px}.form-inner{width:min(380px,calc(100% - 44px))}.field{margin:6px 0}.field-box{height:42px}.intro{margin-bottom:13px}.signup-divider{margin:11px 0}.social{height:44px}}@media(max-width:760px){.auth-page{padding:16px 8px}.auth-card{width:100%;height:min(620px,calc(100vh - 32px));min-height:540px}.form-inner{width:calc(100% - 32px)}.socials{gap:8px}.social{height:44px}.brand{padding:22px 12px}.brand-copy i{margin:16px auto}.cta{margin-top:22px}}
+.brand{justify-content:center;gap:0;padding:36px 45px}.logo-row{margin-top:0}.brand-copy{margin-top:24px}.brand-copy i{margin:18px auto}.cta{margin-top:34px}.cta p{margin-bottom:12px}@media(max-height:720px) and (min-width:761px){.brand{padding:26px 32px}.brand-copy{margin-top:18px}.brand-copy i{margin:14px auto}.cta{margin-top:24px}}@media(max-width:760px){.brand{justify-content:center;padding:24px 12px}.brand-copy{margin-top:16px}.cta{margin-top:22px}}
+/* Slightly smaller outer preview card. */
+.auth-card{width:min(900px,calc(100% - 32px));height:min(600px,calc(100vh - 64px));min-height:540px}
+`;
 export default App;

@@ -19,7 +19,7 @@ import type { AppDescriptor } from 'shell';
 import App from './App';
 
 const descriptor: AppDescriptor = {
-	id: 'local.disputiq',
+	id: 'disputiq_team.disputiq',
 	name: 'Disputiq',
 	branding: { appName: 'Disputiq' },
 	app: App,
