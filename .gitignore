@@ -4,3 +4,9 @@
 # Dependencies and build output (machine-generated)
 **/node_modules/
 **/dist/
+
+# Python
+**/.venv/
+**/__pycache__/
+**/*.pyc
+.DS_Store
